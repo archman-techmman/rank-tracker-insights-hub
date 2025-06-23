@@ -1,7 +1,9 @@
 
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronRight, Clock, Search } from 'lucide-react';
 
 interface Keyword {
   id: string;
@@ -18,6 +20,18 @@ interface RankingTableProps {
 }
 
 export const RankingTable = ({ keywords, businessName }: RankingTableProps) => {
+  const [expandedKeywords, setExpandedKeywords] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (keywordId: string) => {
+    const newExpanded = new Set(expandedKeywords);
+    if (newExpanded.has(keywordId)) {
+      newExpanded.delete(keywordId);
+    } else {
+      newExpanded.add(keywordId);
+    }
+    setExpandedKeywords(newExpanded);
+  };
+
   const getTrendIcon = (current: number | null, previous: number | null) => {
     if (current === null || previous === null) return <Minus className="w-4 h-4 text-gray-400" />;
     if (current < previous) return <TrendingUp className="w-4 h-4 text-green-500" />;
@@ -53,46 +67,65 @@ export const RankingTable = ({ keywords, businessName }: RankingTableProps) => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Ranking Report for {businessName}</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold">Detailed Ranking Report</h2>
+        <div className="text-sm text-gray-600">
+          Client: <span className="font-medium">{businessName}</span>
+        </div>
+      </div>
       
       {keywords.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>No keywords to display</p>
+          <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>No keywords to display for this business</p>
+          <p className="text-sm">Add keywords above to start tracking rankings</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-2 font-medium">Keyword</th>
-                <th className="text-center py-3 px-2 font-medium">Current Position</th>
-                <th className="text-center py-3 px-2 font-medium">Trend</th>
-                <th className="text-center py-3 px-2 font-medium">Best Position</th>
-                <th className="text-center py-3 px-2 font-medium">Average Position</th>
-                <th className="text-center py-3 px-2 font-medium">Checks</th>
-                <th className="text-left py-3 px-2 font-medium">Last Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keywords.map((keyword) => (
-                <tr key={keyword.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-2">
-                    <div className="font-medium">{keyword.term}</div>
-                  </td>
-                  <td className="py-3 px-2 text-center">
+        <div className="space-y-4">
+          {keywords.map((keyword) => (
+            <div key={keyword.id} className="border rounded-lg overflow-hidden">
+              {/* Main Row */}
+              <div className="bg-white hover:bg-gray-50 transition-colors">
+                <div className="grid grid-cols-12 gap-4 p-4 items-center">
+                  <div className="col-span-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleExpanded(keyword.id)}
+                        className="p-1"
+                      >
+                        {expandedKeywords.has(keyword.id) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <div>
+                        <div className="font-medium">{keyword.term}</div>
+                        <div className="text-xs text-gray-500">
+                          {keyword.trackingHistory.length} searches recorded
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="col-span-2 text-center">
                     <Badge className={getPositionColor(keyword.currentPosition)}>
                       {keyword.currentPosition || 'Not ranked'}
                     </Badge>
-                  </td>
-                  <td className="py-3 px-2 text-center">
+                  </div>
+                  
+                  <div className="col-span-2 text-center">
                     <div className="flex items-center justify-center gap-1">
                       {getTrendIcon(keyword.currentPosition, keyword.previousPosition)}
                       <span className="text-sm text-gray-600">
                         {getTrendText(keyword.currentPosition, keyword.previousPosition)}
                       </span>
                     </div>
-                  </td>
-                  <td className="py-3 px-2 text-center">
+                  </div>
+                  
+                  <div className="col-span-1 text-center">
                     {getBestPosition(keyword) ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700">
                         #{getBestPosition(keyword)}
@@ -100,8 +133,9 @@ export const RankingTable = ({ keywords, businessName }: RankingTableProps) => {
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
-                  </td>
-                  <td className="py-3 px-2 text-center">
+                  </div>
+                  
+                  <div className="col-span-1 text-center">
                     {getAveragePosition(keyword) ? (
                       <Badge variant="outline">
                         #{getAveragePosition(keyword)}
@@ -109,11 +143,9 @@ export const RankingTable = ({ keywords, businessName }: RankingTableProps) => {
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
-                  </td>
-                  <td className="py-3 px-2 text-center">
-                    <span className="text-gray-600">{keyword.trackingHistory.length}</span>
-                  </td>
-                  <td className="py-3 px-2 text-sm text-gray-600">
+                  </div>
+                  
+                  <div className="col-span-2 text-sm text-gray-600">
                     {keyword.lastChecked ? (
                       <div>
                         <div>{keyword.lastChecked.toLocaleDateString()}</div>
@@ -124,11 +156,81 @@ export const RankingTable = ({ keywords, businessName }: RankingTableProps) => {
                     ) : (
                       'Never'
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedKeywords.has(keyword.id) && (
+                <div className="bg-gray-50 border-t p-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Search History ({keyword.trackingHistory.length} records)
+                  </h4>
+                  
+                  {keyword.trackingHistory.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No search history yet</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-3">Date & Time</th>
+                            <th className="text-center py-2 px-3">Position</th>
+                            <th className="text-center py-2 px-3">Change</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {keyword.trackingHistory
+                            .slice()
+                            .reverse()
+                            .map((entry, index) => {
+                              const previousEntry = keyword.trackingHistory
+                                .slice()
+                                .reverse()[index + 1];
+                              const change = previousEntry 
+                                ? previousEntry.position - entry.position
+                                : 0;
+                              
+                              return (
+                                <tr key={index} className="border-b border-gray-100">
+                                  <td className="py-2 px-3">
+                                    <div>{entry.timestamp.toLocaleDateString()}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {entry.timestamp.toLocaleTimeString()}
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <Badge className={getPositionColor(entry.position)}>
+                                      #{entry.position}
+                                    </Badge>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    {change > 0 && (
+                                      <span className="text-green-600 text-xs">
+                                        +{change}
+                                      </span>
+                                    )}
+                                    {change < 0 && (
+                                      <span className="text-red-600 text-xs">
+                                        {change}
+                                      </span>
+                                    )}
+                                    {change === 0 && (
+                                      <span className="text-gray-400 text-xs">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </Card>
